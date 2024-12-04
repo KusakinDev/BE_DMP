@@ -2,6 +2,7 @@ package loadimage
 
 import (
 	cdc "back/config/cloudinaryConfig"
+	vjwt "back/jwt/verefyJWT"
 	"fmt"
 	"net/http"
 	"path/filepath"
@@ -11,8 +12,14 @@ import (
 )
 
 func UploadImage(w http.ResponseWriter, r *http.Request) {
+	_, err := vjwt.VerifyJWT(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
 	// Парсим форму с файлом
-	err := r.ParseMultipartForm(10 << 20) // Ограничение: 10MB
+	err = r.ParseMultipartForm(10 << 20) // Ограничение: 10MB
 	if err != nil {
 		http.Error(w, "Ошибка парсинга формы", http.StatusBadRequest)
 		return
