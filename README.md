@@ -1,3 +1,3 @@
 # BE_DMP
-run
+run:
 go run api.go
