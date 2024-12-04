@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
+	"strconv"
 )
 
 func Login(w http.ResponseWriter, r *http.Request) {
@@ -46,6 +47,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	// Отправляем JWT токен в ответе
 	w.Header().Set("Content-Type", "application/json")
-	response := map[string]string{"token": tokenString}
+	response := map[string]string{"token": tokenString, "id": strconv.Itoa(userID)}
 	json.NewEncoder(w).Encode(response)
 }

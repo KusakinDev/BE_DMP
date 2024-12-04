@@ -18,7 +18,7 @@ func GetAllFeed(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Запрос к базе данных для получения всех товаров, исключая поле item
-	query := "SELECT id, id_s, title, description, price, date_pub, date_buy, is_buy FROM goods"
+	query := "SELECT id, id_s, title, description, price, date_pub, date_buy, is_buy, image FROM goods"
 	rows, err := dbA.DB.Query(query)
 	if err != nil {
 		log.Printf("Error querying database: %v", err)
@@ -31,7 +31,7 @@ func GetAllFeed(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var goods gs.Goods
 		var dateBuy sql.NullString
-		if err := rows.Scan(&goods.ID, &goods.IDS, &goods.Title, &goods.Description, &goods.Price, &goods.DatePub, &dateBuy, &goods.IsBuy); err != nil {
+		if err := rows.Scan(&goods.ID, &goods.IDS, &goods.Title, &goods.Description, &goods.Price, &goods.DatePub, &dateBuy, &goods.IsBuy, &goods.Image); err != nil {
 			log.Printf("Error scanning row: %v", err)
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return

@@ -9,4 +9,5 @@ type Goods struct {
 	DatePub     string  `json:"date_pub"`
 	DateBuy     *string `json:"date_buy"`
 	IsBuy       bool    `json:"is_buy"`
+	Image       string  `json:"image"`
 }
