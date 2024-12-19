@@ -2,27 +2,21 @@ package getallfeed
 
 import (
 	dbA "back/db"
-	vjwt "back/jwt/verefyJWT"
 	gs "back/struct/goodsStruct"
 	"database/sql"
-	"encoding/json"
 	"log"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
-func GetAllFeed(w http.ResponseWriter, r *http.Request) {
-	_, err := vjwt.VerifyJWT(r)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
+func GetAllFeed(c *gin.Context) {
 
-	// Запрос к базе данных для получения всех товаров, исключая поле item
 	query := "SELECT id, id_s, title, description, price, date_pub, date_buy, is_buy, image FROM goods"
 	rows, err := dbA.DB.Query(query)
 	if err != nil {
 		log.Printf("Error querying database: %v", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		c.JSON(http.StatusNotFound, gin.H{"error": "Error querying database"})
 		return
 	}
 	defer rows.Close()
@@ -33,7 +27,7 @@ func GetAllFeed(w http.ResponseWriter, r *http.Request) {
 		var dateBuy sql.NullString
 		if err := rows.Scan(&goods.ID, &goods.IDS, &goods.Title, &goods.Description, &goods.Price, &goods.DatePub, &dateBuy, &goods.IsBuy, &goods.Image); err != nil {
 			log.Printf("Error scanning row: %v", err)
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
 			return
 		}
 		if dateBuy.Valid {
@@ -46,13 +40,9 @@ func GetAllFeed(w http.ResponseWriter, r *http.Request) {
 
 	if err = rows.Err(); err != nil {
 		log.Printf("Error iterating over rows: %v", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(goodsList); err != nil {
-		log.Printf("Error encoding response to JSON: %v", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-	}
+	c.JSON(http.StatusOK, goodsList)
 }

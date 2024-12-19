@@ -2,26 +2,24 @@ package createproductcard
 
 import (
 	dbA "back/db"
-	vjwt "back/jwt/verefyJWT"
 	gs "back/struct/goodsStruct"
-	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
-func CreateProductCard(w http.ResponseWriter, r *http.Request) {
-	_, err := vjwt.VerifyJWT(r)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		log.Printf("%v", err)
+func CreateProductCard(c *gin.Context) {
+	/*id, exists := c.Get("id")
+	if !exists {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Id not found in context"})
 		return
-	}
+	}*/
+
 	var newProduct gs.Goods
-	if err := json.NewDecoder(r.Body).Decode(&newProduct); err != nil {
-		http.Error(w, "Неудалось декодировать JSON", http.StatusBadRequest)
-		log.Printf("%v", err)
+	if err := c.ShouldBindJSON(&newProduct); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Неудалось декодировать JSON"})
 		return
 	}
 
@@ -35,10 +33,9 @@ func CreateProductCard(w http.ResponseWriter, r *http.Request) {
 	query := "INSERT INTO goods (id_s, title, description, price, date_pub, is_buy, image) VALUES ($1, $2, $3, $4, $5, $6, $7)"
 	args := []interface{}{newProduct.IDS, newProduct.Title, newProduct.Description, newProduct.Price, currentDate, false, newProduct.Image}
 
-	_, err = dbA.DB.Exec(query, args...)
+	_, err := dbA.DB.Exec(query, args...)
 	if err != nil {
-		http.Error(w, "Ошибка добавления товара в таблицу", http.StatusBadRequest)
-		log.Printf("%v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Ошибка добавления товара в таблицу"})
 		return
 	}
 
