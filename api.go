@@ -1,17 +1,19 @@
 package main
 
 import (
+	authmiddleware "back/auth/authMiddleware"
+	corsmiddleware "back/auth/corsMiddleware"
+	refreshjwt "back/auth/refreshJWT"
 	cdc "back/config/cloudinaryConfig"
 	dbA "back/db"
-	lg "back/enters/login"
-	gaf "back/feed/getAllFeed"
-	uli "back/image/loadImage"
-	cpc "back/sellers/createProductCard"
+	"back/enters/login"
+	getallfeed "back/feed/getAllFeed"
+	loadimage "back/image/loadImage"
+	createproductcard "back/sellers/createProductCard"
 	"log"
-	"net/http"
 
+	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
-	"github.com/rs/cors" // Импортируем библиотеку CORS
 )
 
 func main() {
@@ -23,27 +25,24 @@ func main() {
 	// Настройка Cloudinary
 	cdc.CloudinaryConfig()
 
-	// Создаем новый объект CORS
-	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000"},                   // Разрешаем запросы с фронтенда
-		AllowCredentials: true,                                                // Разрешаем отправку cookies
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}, // Разрешаем различные методы
-		AllowedHeaders:   []string{"Content-Type", "Authorization"},           // Разрешаем заголовки
-	})
+	r := gin.Default()
 
-	// Оборачиваем обработчики в CORS middleware
-	mux := http.NewServeMux()
+	r.Use(corsmiddleware.CorsMiddleware())
 
 	// Настройка маршрутов
-	mux.HandleFunc("/login", lg.Login)
-	mux.HandleFunc("/getAllFeed", gaf.GetAllFeed)
-	mux.HandleFunc("/createProductCard", cpc.CreateProductCard)
-	mux.HandleFunc("/uploadProductImage", uli.UploadImage)
+	r.POST("/login", login.Login)
+	r.POST("/refresh", refreshjwt.RefreshToken)
 
-	// Применяем CORS middleware
-	handler := c.Handler(mux)
+	protected := r.Group("/protected")
+	protected.Use(authmiddleware.AuthMiddleware())
+
+	protected.GET("/getAllFeed", getallfeed.GetAllFeed)
+	protected.POST("/createProductCard", createproductcard.CreateProductCard)
+	protected.POST("/uploadProductImage", loadimage.UploadImage)
+
+	//mux.HandleFunc("/getCart", getcart.GetCart)
 
 	// Запуск сервера
 	log.Println("Server starting at :8080")
-	log.Fatal(http.ListenAndServe(":8080", handler))
+	log.Fatal(r.Run(":8080"))
 }

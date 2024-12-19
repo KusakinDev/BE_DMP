@@ -2,33 +2,27 @@ package loadimage
 
 import (
 	cdc "back/config/cloudinaryConfig"
-	vjwt "back/jwt/verefyJWT"
 	"fmt"
 	"net/http"
 	"path/filepath"
 
 	"github.com/cloudinary/cloudinary-go/v2/api/uploader"
+	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
-func UploadImage(w http.ResponseWriter, r *http.Request) {
-	_, err := vjwt.VerifyJWT(r)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
-
+func UploadImage(c *gin.Context) {
 	// Парсим форму с файлом
-	err = r.ParseMultipartForm(10 << 20) // Ограничение: 10MB
+	err := c.Request.ParseMultipartForm(10 << 20) // Ограничение: 10MB
 	if err != nil {
-		http.Error(w, "Ошибка парсинга формы", http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Ошибка парсинга формы"})
 		return
 	}
 
 	// Извлекаем файл из запроса
-	file, fileHeader, err := r.FormFile("file")
+	file, fileHeader, err := c.Request.FormFile("file")
 	if err != nil {
-		http.Error(w, "Ошибка получения файла", http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Ошибка получения файла"})
 		return
 	}
 	defer file.Close()
@@ -37,17 +31,18 @@ func UploadImage(w http.ResponseWriter, r *http.Request) {
 	newFileName := fmt.Sprintf("%s%s", uuid.New().String(), ext)
 
 	// Загрузка файла в Cloudinary
-	uploadResult, err := cdc.CLD.Upload.Upload(r.Context(), file, uploader.UploadParams{
+	uploadResult, err := cdc.CLD.Upload.Upload(c.Request.Context(), file, uploader.UploadParams{
 		Folder:   "product_image", // Опционально: папка в Cloudinary
 		PublicID: newFileName,
 	})
 	if err != nil {
-		http.Error(w, "Ошибка загрузки в Cloudinary", http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка загрузки в Cloudinary"})
 		return
 	}
 
 	// Возвращаем успешный ответ
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, `{"url": "%s", "public_id": "%s"}`, uploadResult.SecureURL, uploadResult.PublicID)
+	c.JSON(http.StatusOK, gin.H{
+		"url":       uploadResult.SecureURL,
+		"public_id": uploadResult.PublicID,
+	})
 }
