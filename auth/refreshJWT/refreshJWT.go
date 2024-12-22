@@ -2,7 +2,6 @@ package refreshjwt
 
 import (
 	jwtconfig "back/config/jwtConfig"
-	"log"
 	"net/http"
 	"time"
 
@@ -63,7 +62,6 @@ func RefreshToken(c *gin.Context) {
 		return
 	}
 
-	log.Println("token", accessTokenString, "refresh_token", refreshTokenString)
 	// Отправка новой пары токенов на фронт
 	c.JSON(http.StatusOK, gin.H{
 		"token":         accessTokenString,

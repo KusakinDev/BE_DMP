@@ -1,22 +1,29 @@
 package db
 
 import (
-	"database/sql"
-	"fmt"
+	cartstruct "back/struct/cartStruct"
+	goodsstruct "back/struct/goodsStruct"
+	userstruct "back/struct/userStruct"
 	"log"
+
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
-var DB *sql.DB
+var DB *gorm.DB
 
 func InitDB() {
 	var err error
-	connStr := "user=postgres password=5121508 dbname=dmp_db sslmode=disable"
-	DB, err = sql.Open("postgres", connStr)
+	dsn := "host=localhost user=postgres password=5121508 dbname=dmp_db port=5432 sslmode=disable"
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	DB = db
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err = DB.Ping(); err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println("Connected to the database successfully!")
+}
+
+func Migration() {
+	DB.AutoMigrate(&userstruct.User{})
+	DB.AutoMigrate(&goodsstruct.Good{})
+	DB.AutoMigrate(&cartstruct.Cart{})
 }

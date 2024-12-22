@@ -2,109 +2,42 @@ package getcart
 
 import (
 	"back/db"
-	verefyjwt "back/jwt/verefyJWT"
-	claimstruct "back/struct/claimStruct"
+	cartstruct "back/struct/cartStruct"
 	goodsstruct "back/struct/goodsStruct"
-	"encoding/json"
 	"log"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
-type Cart struct {
-	Id   int
-	Id_u int
-	Id_p int
-	Date string
-}
+func GetCart(c *gin.Context) {
 
-func GetCart(w http.ResponseWriter, r *http.Request) {
-	claim := &claimstruct.Claims{}
-	var err error
-	claim, err = verefyjwt.VerifyJWT(r)
+	id, exists := c.Get("id")
+	if !exists {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Id not found in context"})
+		return
+	}
+	id = int(id.(float64))
+
+	var carts []cartstruct.Cart
+	err := db.DB.
+		Preload("Good.User"). // Информация о пользователе товара
+		Preload("User").      // Информация о пользователе корзины
+		Where("id_u = ?", id).
+		Find(&carts).Error
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		log.Printf("%v", err)
+		c.JSON(http.StatusNotFound, gin.H{"error": "Корзина не найдена"})
 		return
 	}
 
-	queryCart := "SELECT * FROM cart WHERE id_u = $1"
-	argCart := claim.ID
-	rowsCart, err := db.DB.Query(queryCart, argCart)
-	if err != nil {
-		log.Printf("Error querying database: %v", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-	defer rowsCart.Close()
-
-	var goodsList []goodsstruct.GoodsToFront
-	for rowsCart.Next() {
-		var cart Cart
-		if err := rowsCart.Scan(&cart.Id, &cart.Id_u, &cart.Id_p, &cart.Date); err != nil {
-			log.Printf("Error scanning row: %v", err)
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
-
-		queryGoods := "SELECT id, id_s, title, description, price, is_buy, image FROM goods WHERE id = $1"
-		argGoods := cart.Id_p
-		rowsGoods, err := db.DB.Query(queryGoods, argGoods)
-		if err != nil {
-			log.Printf("Error querying database: %v", err)
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
-		defer rowsGoods.Close()
-
-		var goods goodsstruct.GoodsToFront
-		if rowsGoods.Next() {
-
-			var id int
-			if err := rowsGoods.Scan(
-				&goods.ID,
-				&id,
-				&goods.Title,
-				&goods.Description,
-				&goods.Price,
-				&goods.IsBuy,
-				&goods.Image); err != nil {
-				log.Printf("Error scanning rowsGoods: %v", err)
-				http.Error(w, "Error scanning rowsGoods", http.StatusInternalServerError)
-				return
-			}
-
-			goods.DateBuy = &cart.Date
-			log.Println("goods ", goods)
-
-			querySellers := "SELECT name FROM users WHERE id = $1"
-			argSellers := id
-			rowsSellers, err := db.DB.Query(querySellers, argSellers)
-			if err != nil {
-				log.Printf("Error querying database: %v", err)
-				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-				return
-			}
-
-			if rowsSellers.Next() {
-				if err := rowsSellers.Scan(&goods.Seller); err != nil {
-					log.Printf("Error scanning row: %v", err)
-					http.Error(w, "Error scanning row", http.StatusInternalServerError)
-					return
-				}
-			}
-
-		}
-		if !goods.IsBuy {
-			goodsList = append(goodsList, goods)
-		}
-
+	var goods []goodsstruct.Good
+	for _, item := range carts {
+		item.Good.User.ID = 0
+		item.Good.User.Password = ""
+		item.Good.User.Email = ""
+		goods = append(goods, item.Good)
 	}
 
-	log.Println(goodsList)
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(goodsList); err != nil {
-		log.Printf("Error encoding response to JSON: %v", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-	}
-
+	log.Println("goods ", goods)
+	c.JSON(http.StatusOK, goods)
 }
