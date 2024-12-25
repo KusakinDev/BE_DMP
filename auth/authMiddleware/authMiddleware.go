@@ -17,7 +17,7 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		tokenString = tokenString[len("Bearer "):] // Убираем "Bearer " префикс
+		tokenString = tokenString[len("Bearer "):]
 
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			return jwtconfig.JWT_KEY, nil

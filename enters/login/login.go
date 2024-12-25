@@ -4,7 +4,6 @@ import (
 	jwtconfig "back/config/jwtConfig"
 	dbA "back/db"
 	us "back/struct/userStruct"
-	"log"
 	"net/http"
 	"time"
 
@@ -18,7 +17,6 @@ func Login(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
 		return
 	}
-	log.Println(userFront)
 
 	var user us.User
 	// Проверка пользователя в базе данных
@@ -28,15 +26,14 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	// Пока что пароль не захеширован, просто сравниваем строки
-	if userFront.Password != user.Password {
+	if !user.CheckPassword(userFront.Password) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
 		return
 	}
 
 	// Генерация access токена
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":  user.ID,
+		"id":  user.Id,
 		"exp": time.Now().Add(30 * time.Second).Unix(), // Токен действует 30 секунд
 	})
 	accessTokenString, err := accessToken.SignedString(jwtconfig.JWT_KEY)
@@ -47,7 +44,7 @@ func Login(c *gin.Context) {
 
 	// Генерация refresh токена
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":  user.ID,
+		"id":  user.Id,
 		"exp": time.Now().Add(time.Hour * 24 * 7).Unix(), // Токен действует 7 дней
 	})
 	refreshTokenString, err := refreshToken.SignedString(jwtconfig.JWT_KEY)
