@@ -12,6 +12,6 @@ type Cart struct {
 	Date string `json:"date" gorm:"type:date"`
 
 	// Ассоциации
-	User userstruct.User  `gorm:"foreignKey:Id_u;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
-	Good goodsstruct.Good `gorm:"foreignKey:Id_p;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL"`
+	User userstruct.User  `gorm:"foreignKey:Id_u;references:Id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Good goodsstruct.Good `gorm:"foreignKey:Id_p;references:Id;constraint:OnUpdate:CASCADE,OnDelete:SET NULL"`
 }

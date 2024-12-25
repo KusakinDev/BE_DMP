@@ -21,7 +21,7 @@ func DisableProductCard(c *gin.Context) {
 		return
 	}
 
-	err := db.DB.Model(&good).Where("id = ? AND id_s = ?", good.ID, id).Update("is_sell", false).Error
+	err := db.DB.Model(&good).Where("id = ? AND id_s = ?", good.Id, id).Update("is_sell", false).Error
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Не удалось обновить товар"})
 		return

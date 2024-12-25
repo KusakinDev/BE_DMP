@@ -31,11 +31,21 @@ func GetCart(c *gin.Context) {
 	}
 
 	var goods []goodsstruct.Good
-	for _, item := range carts {
-		item.Good.User.ID = 0
-		item.Good.User.Password = ""
-		item.Good.User.Email = ""
-		goods = append(goods, item.Good)
+	for _, good := range carts {
+		good.Good.User.Id = 0
+		good.Good.User.Password = ""
+		good.Good.User.Email = ""
+
+		/*
+
+			if good.Good.IsBuy {
+				if good.Good.IdU == id {
+					goods = append(goods, good.Good)
+				}
+			} else {
+				goods = append(goods, good.Good)
+			}*/
+		goods = append(goods, good.Good)
 	}
 
 	log.Println("goods ", goods)

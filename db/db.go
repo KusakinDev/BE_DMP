@@ -3,6 +3,8 @@ package db
 import (
 	cartstruct "back/struct/cartStruct"
 	goodsstruct "back/struct/goodsStruct"
+	historystruct "back/struct/historyStruct"
+	itemstruct "back/struct/itemStruct"
 	userstruct "back/struct/userStruct"
 	"log"
 
@@ -26,4 +28,6 @@ func Migration() {
 	DB.AutoMigrate(&userstruct.User{})
 	DB.AutoMigrate(&goodsstruct.Good{})
 	DB.AutoMigrate(&cartstruct.Cart{})
+	DB.AutoMigrate(&historystruct.History{})
+	DB.AutoMigrate(&itemstruct.Item{})
 }

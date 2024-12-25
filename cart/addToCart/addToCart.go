@@ -26,7 +26,7 @@ func AddToCart(c *gin.Context) {
 	}
 
 	var cart1 cartstruct.Cart
-	errfind := db.DB.Where("id_u = ? AND id_p = ?", id, newProduct.ID).First(&cart1)
+	errfind := db.DB.Where("id_u = ? AND id_p = ?", id, newProduct.Id).First(&cart1)
 	if errfind.Error == nil {
 		c.JSON(http.StatusAlreadyReported, gin.H{"error": "Товар уже добавлен в корзину"})
 		return
@@ -38,7 +38,7 @@ func AddToCart(c *gin.Context) {
 
 	var cart cartstruct.Cart
 	cart.Id_u = int(id.(float64))
-	cart.Id_p = newProduct.ID
+	cart.Id_p = newProduct.Id
 	cart.Date = time.Now().Format("2006-01-02")
 
 	err1 := db.DB.Create(&cart).Error

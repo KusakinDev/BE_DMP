@@ -23,7 +23,7 @@ func GetAllFeed(c *gin.Context) {
 	}
 
 	for i := range goodsList {
-		goodsList[i].User.ID = 0
+		goodsList[i].User.Id = 0
 		goodsList[i].User.Password = ""
 		goodsList[i].User.Email = ""
 	}
