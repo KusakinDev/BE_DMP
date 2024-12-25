@@ -4,7 +4,6 @@ import (
 	jwtconfig "back/config/jwtConfig"
 	dbA "back/db"
 	us "back/struct/userStruct"
-	"database/sql"
 	"log"
 	"net/http"
 	"time"
@@ -14,37 +13,30 @@ import (
 )
 
 func Login(c *gin.Context) {
-	var user us.User
-	if err := c.ShouldBindJSON(&user); err != nil {
+	var userFront us.User
+	if err := c.ShouldBindJSON(&userFront); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
 		return
 	}
-	log.Println(user)
+	log.Println(userFront)
+
+	var user us.User
 	// Проверка пользователя в базе данных
-	query := "SELECT id, password FROM users WHERE name=$1"
-	args := user.Name
-	row := dbA.DB.QueryRow(query, args)
-	var storedPassword string
-	var userID int
-	err := row.Scan(&userID, &storedPassword)
+	err := dbA.DB.Where("name = ?", userFront.Name).First(&user).Error
 	if err != nil {
-		if err == sql.ErrNoRows {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
-			return
-		}
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
 		return
 	}
 
 	// Пока что пароль не захеширован, просто сравниваем строки
-	if user.Password != storedPassword {
+	if userFront.Password != user.Password {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
 		return
 	}
 
 	// Генерация access токена
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":  userID,
+		"id":  user.ID,
 		"exp": time.Now().Add(30 * time.Second).Unix(), // Токен действует 30 секунд
 	})
 	accessTokenString, err := accessToken.SignedString(jwtconfig.JWT_KEY)
@@ -55,7 +47,7 @@ func Login(c *gin.Context) {
 
 	// Генерация refresh токена
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":  userID,
+		"id":  user.ID,
 		"exp": time.Now().Add(time.Hour * 24 * 7).Unix(), // Токен действует 7 дней
 	})
 	refreshTokenString, err := refreshToken.SignedString(jwtconfig.JWT_KEY)

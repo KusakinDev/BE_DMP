@@ -2,9 +2,8 @@ package getallfeed
 
 import (
 	dbA "back/db"
-	gs "back/struct/goodsStruct"
-	"database/sql"
-	"log"
+	goodsstruct "back/struct/goodsStruct"
+
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -12,36 +11,21 @@ import (
 
 func GetAllFeed(c *gin.Context) {
 
-	query := "SELECT id, id_s, title, description, price, date_pub, date_buy, is_buy, image FROM goods"
-	rows, err := dbA.DB.Query(query)
+	goodsList := []goodsstruct.Good{}
+	err := dbA.DB.
+		Where("is_buy = ? AND is_sell = ?", false, true).
+		Preload("User").
+		Find(&goodsList).
+		Error
 	if err != nil {
-		log.Printf("Error querying database: %v", err)
-		c.JSON(http.StatusNotFound, gin.H{"error": "Error querying database"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "Товары не найдены"})
 		return
 	}
-	defer rows.Close()
 
-	goodsList := []gs.Goods{}
-	for rows.Next() {
-		var goods gs.Goods
-		var dateBuy sql.NullString
-		if err := rows.Scan(&goods.ID, &goods.IDS, &goods.Title, &goods.Description, &goods.Price, &goods.DatePub, &dateBuy, &goods.IsBuy, &goods.Image); err != nil {
-			log.Printf("Error scanning row: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
-			return
-		}
-		if dateBuy.Valid {
-			goods.DateBuy = &dateBuy.String
-		} else {
-			goods.DateBuy = nil
-		}
-		goodsList = append(goodsList, goods)
-	}
-
-	if err = rows.Err(); err != nil {
-		log.Printf("Error iterating over rows: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
-		return
+	for i := range goodsList {
+		goodsList[i].User.ID = 0
+		goodsList[i].User.Password = ""
+		goodsList[i].User.Email = ""
 	}
 
 	c.JSON(http.StatusOK, goodsList)

@@ -2,8 +2,7 @@ package createproductcard
 
 import (
 	dbA "back/db"
-	gs "back/struct/goodsStruct"
-	"fmt"
+	goodsstruct "back/struct/goodsStruct"
 	"net/http"
 	"time"
 
@@ -11,32 +10,29 @@ import (
 )
 
 func CreateProductCard(c *gin.Context) {
-	/*id, exists := c.Get("id")
+
+	id, exists := c.Get("id")
 	if !exists {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Id not found in context"})
 		return
-	}*/
+	}
 
-	var newProduct gs.Goods
+	var newProduct goodsstruct.Good
 	if err := c.ShouldBindJSON(&newProduct); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Неудалось декодировать JSON"})
 		return
 	}
-
-	fmt.Println("IDS:", newProduct.IDS)
-	fmt.Println("Title:", newProduct.Title)
-	fmt.Println("Description:", newProduct.Description)
-	fmt.Println("Price:", newProduct.Price)
-	fmt.Println("Image:", newProduct.Image)
-
-	currentDate := time.Now().Format("2006-01-02")
-	query := "INSERT INTO goods (id_s, title, description, price, date_pub, is_buy, image) VALUES ($1, $2, $3, $4, $5, $6, $7)"
-	args := []interface{}{newProduct.IDS, newProduct.Title, newProduct.Description, newProduct.Price, currentDate, false, newProduct.Image}
-
-	_, err := dbA.DB.Exec(query, args...)
+	newProduct.ID = 0
+	newProduct.IDS = int(id.(float64))
+	newProduct.DatePub = time.Now().Format("2006-01-02")
+	newProduct.IsBuy = false
+	err := dbA.DB.Create(&newProduct).Error
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Ошибка добавления товара в таблицу"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Не удалось добавить товар", "details": err.Error()})
 		return
 	}
+
+	// Успешный ответ
+	c.JSON(http.StatusOK, gin.H{"message": "Товар успешно добавлен"})
 
 }
